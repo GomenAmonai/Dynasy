@@ -1,7 +1,0 @@
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.csproj.AssemblyReference.cache
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.GeneratedMSBuildEditorConfig.editorconfig
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.AssemblyInfoInputs.cache
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.AssemblyInfo.cs
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.csproj.CoreCompileInputs.cache
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.MvcApplicationPartsAssemblyInfo.cache
-/Users/daniillednik/Develop/Dynasy/obj/Debug/net6.0/Dynasy.sourcelink.json
