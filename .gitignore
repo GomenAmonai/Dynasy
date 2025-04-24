@@ -1,0 +1,36 @@
+# .NET build folders
+bin/
+obj/
+
+# User-specific files
+.vscode/
+.idea/
+
+# ASP.NET specific
+appsettings.Development.json
+appsettings.json
+
+# Entity Framework migrations
+Migrations/
+
+# VSCode/Visual Studio specific
+.vs/
+.vscode/
+.idea/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/

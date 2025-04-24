@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Dynasy")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8b03263578b853c385f6f003d1765426062466e0")]
 [assembly: System.Reflection.AssemblyProductAttribute("Dynasy")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Dynasy")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
