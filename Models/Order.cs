@@ -11,6 +11,6 @@ namespace Dynasy.Models
         public ICollection<Product> Products { get; set; } = new List<Product>();  // Инициализация коллекции
         public decimal TotalPrice { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // Инициализация значением по умолчанию
-        public string Status { get; set; } = string.Empty;  // Инициализация значением по умолчанию
+        public OrderStatus Status { get; set; } // Инициализация значением по умолчанию
     }
 }
