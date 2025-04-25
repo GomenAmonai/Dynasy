@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Dynasy.Models;
+using Dynasy.DTOs;
 
-public interface IOrderService
+namespace Dynasy.Services
 {
-    Task<Order> CreateOrderAsync(Order order);
-    Task<Order> GetOrderByIdAsync(int orderId);
-    Task<IEnumerable<Order>> GetAllOrdersAsync();
-    Task UpdateOrderStatusAsync(int orderId, OrderStatus status);
-    Task DeleteOrderAsync(int orderId);
+    public interface IOrderService
+    {
+        Task<IEnumerable<OrderDto>> GetAllOrdersAsync();
+        Task<OrderDto> GetOrderByIdAsync(int id);
+        Task<OrderDto> CreateOrderAsync(CreateOrderDto createOrderDto);
+        Task<OrderDto> UpdateOrderAsync(int id, UpdateOrderDto updateOrderDto);
+        Task DeleteOrderAsync(int id);
+    }
 }

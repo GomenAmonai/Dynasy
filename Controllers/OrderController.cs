@@ -1,95 +1,119 @@
 using Microsoft.AspNetCore.Mvc;
-using Dynasy.Data;
-using Dynasy.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections;
+using Dynasy.Services;
+using Dynasy.DTOs;
 using System.Collections.Generic;
-using Microsoft.Extensions.FileProviders;
-using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Dynasy.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrderController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IOrderService _orderService;
+        private readonly ILogger<OrderController> _logger;
 
-        public OrderController(AppDbContext context)
+        public OrderController(IOrderService orderService, ILogger<OrderController> logger)
         {
-            _context = context;
+            _orderService = orderService;
+            _logger = logger;
         }
 
-        // GET: api/Order
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
+        public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrders()
         {
-            var orders = await _context.Orders.Include(o => o.User).Include(o => o.Products).ToListAsync();
-            return Ok(orders);
-        }
-
-        // GET: api/Order/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Order>> GetOrder(int id)
-        {
-            var order = await _context.Orders.Include(o => o.User).Include(o => o.Products).FirstOrDefaultAsync(o => o.Id == id);
-            if (order == null)
-            {
-                return NotFound();
-            }
-            return Ok(order);
-        }
-
-        // POST: api/Order
-        [HttpPost]
-        public async Task<ActionResult<Order>> CreateOrder(Order order)
-        {
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
-        }
-
-        // PUT: api/Order/5
-        [HttpPut("{id}")]
-        public async Task<ActionResult<Order>> UpdateOrder(int id, Order order)
-        {
-            if (id != order.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(order).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                var orders = await _orderService.GetAllOrdersAsync();
+                return Ok(orders);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!_context.Orders.Any(e => e.Id == id))
-                {
-                    return NotFound();
-                }
-                throw;
+                _logger.LogError(ex, "Ошибка при получении списка заказов");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
             }
-
-            return NoContent();
         }
 
-        // DELETE: api/Order/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<OrderDto>> GetOrder(int id)
+        {
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                return Ok(order);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при получении заказа с ID {id}");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<OrderDto>> CreateOrder(CreateOrderDto createOrderDto)
+        {
+            try
+            {
+                var order = await _orderService.CreateOrderAsync(createOrderDto);
+                return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при создании заказа");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<OrderDto>> UpdateOrder(int id, UpdateOrderDto updateOrderDto)
+        {
+            try
+            {
+                var order = await _orderService.UpdateOrderAsync(id, updateOrderDto);
+                return Ok(order);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при обновлении заказа с ID {id}");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteOrder(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null)
+            try
             {
-                return NotFound();
+                await _orderService.DeleteOrderAsync(id);
+                return NoContent();
             }
-
-            _context.Orders.Remove(order);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при удалении заказа с ID {id}");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
         }
     }
 }

@@ -1,10 +1,9 @@
 namespace Dynasy.DTOs
 {
-    public CreateUserDTO
+    public class CreateUserDTO
     {
         public string Email { get; set; }
-        public string Password { get; set;}
-        public string Name { get; set ;}
-        A
+        public string Password { get; set; }
+        public string Name { get; set; }
     }
 }

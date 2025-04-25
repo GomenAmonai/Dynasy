@@ -9,66 +9,83 @@ namespace Dynasy.Services ;
 public class ProductService : IProductService
 {
     private readonly AppDbContext _context;
+    private readonly IMapper _mapper;
+    private readonly ILogger<ProductService> _logger;
 
-    public ProductService(AppDbContext context)
+    public ProductService(AppDbContext context, IMapper mapper, ILogger<ProductService> logger)
     {
         _context = context;
+        _mapper = mapper;
+        _logger = logger;
     }
 
-    // Создание продукта
-    public async Task<Product> CreateProductAsync(string name, decimal price, string description)
+    public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
     {
-        var product = new Product
+        try
         {
-            Name = name,
-            Price = price,
-            Description = description
-        };
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync();
-        return product;
-    }
+            var products = await _context.Products
+                .Include(p => p.Seller)
+                .ToListAsync();
 
-    // Получение всех продуктов
-    public async Task<List<Product>> GetAllProductsAsync()
-    {
-        return await _context.Products.ToListAsync();
-    }
-
-    // Получение продукта по ID
-    public async Task<Product> GetProductByIdAsync(int id)
-    {
-        return await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-    }
-
-    // Обновление продукта
-    public async Task<Product> UpdateProductAsync(int id, string name, decimal price, string description)
-    {
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-        if (product == null)
-        {
-            return null;
+            return _mapper.Map<IEnumerable<ProductDto>>(products);
         }
-
-        product.Name = name;
-        product.Price = price;
-        product.Description = description;
-        await _context.SaveChangesAsync();
-
-        return product;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при получении списка продуктов");
+            throw new ApplicationException("Не удалось получить список продуктов", ex);
+        }
     }
 
-    // Удаление продукта
-    public async Task<bool> DeleteProductAsync(int id)
+    public async Task<ProductDto> GetProductByIdAsync(int id)
     {
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        var product = await _context.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
         if (product == null)
+            throw new NotFoundException($"Продукт с ID {id} не найден");
+
+        return _mapper.Map<ProductDto>(product);
+    }
+
+    public async Task<ProductDto> CreateProductAsync(CreateProductDto createProductDto)
+    {
+        try
         {
-            return false;
+            var product = _mapper.Map<Product>(createProductDto);
+            product.CreatedAt = DateTime.UtcNow;
+
+            await _context.Products.AddAsync(product);
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<ProductDto>(product);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при создании продукта");
+            throw;
+        }
+    }
+
+    public async Task<ProductDto> UpdateProductAsync(int id, UpdateProductDto updateProductDto)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product == null)
+            throw new NotFoundException($"Продукт с ID {id} не найден");
+
+        _mapper.Map(updateProductDto, product);
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<ProductDto>(product);
+    }
+
+    public async Task DeleteProductAsync(int id)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product == null)
+            throw new NotFoundException($"Продукт с ID {id} не найден");
 
         _context.Products.Remove(product);
         await _context.SaveChangesAsync();
-        return true;
     }
 }

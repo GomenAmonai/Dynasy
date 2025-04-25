@@ -1,91 +1,119 @@
 using Microsoft.AspNetCore.Mvc;
-using Dynasy.Data;
-using Dynasy.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections;
+using Dynasy.Services;
+using Dynasy.DTOs;
 using System.Collections.Generic;
-using Microsoft.Extensions.FileProviders;
-using System.Linq;
-using Microsoft.VisualBasic;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Dynasy.Controllers
 {
-    [Route("api/[contoller]")]
+    [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Добавляем атрибут авторизации
     public class ReviewController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IReviewService _reviewService;
+        private readonly ILogger<ReviewController> _logger;
 
-        public ReviewController(AppDbContext context)
+        public ReviewController(IReviewService reviewService, ILogger<ReviewController> logger)
         {
-            _context = context;
+            _reviewService = reviewService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Review>>> GetReviews()
+        public async Task<ActionResult<IEnumerable<ReviewDto>>> GetReviews()
         {
-            var reviews = await _context.Reviews.Include(r => r.Product).Include(r => r.User).ToListAsync();
-            return Ok(reviews);
+            try
+            {
+                var reviews = await _reviewService.GetAllReviewsAsync();
+                return Ok(reviews);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении списка отзывов");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Review>> GetReview(int id)
+        public async Task<ActionResult<ReviewDto>> GetReview(int id)
         {
-            var review = await _context.Reviews.Include(r => r.Product).Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
-            if (review == null)
+            try
             {
-                return NotFound();
+                var review = await _reviewService.GetReviewByIdAsync(id);
+                return Ok(review);
             }
-            return Ok(review);
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при получении отзыва с ID {id}");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
         }
 
         [HttpPost]
-        public async Task<ActionResult<Review>> CreateReview(Review review)
+        public async Task<ActionResult<ReviewDto>> CreateReview(CreateReviewDto createReviewDto)
         {
-            _context.Reviews.Add(review);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetReview), new { id = review.Id}, review);
+            try
+            {
+                var review = await _reviewService.CreateReviewAsync(createReviewDto);
+                return CreatedAtAction(nameof(GetReview), new { id = review.Id }, review);
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при создании отзыва");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
         }
 
-        [HttpPut]
-        public async Task<ActionResult<Review>> UpdateReview(int id, Review review)
+        [HttpPut("{id}")]
+        public async Task<ActionResult<ReviewDto>> UpdateReview(int id, UpdateReviewDto updateReviewDto)
         {
-            if (id != review.Id)
+            try
             {
-                return BadRequest();
+                var review = await _reviewService.UpdateReviewAsync(id, updateReviewDto);
+                return Ok(review);
             }
-
-            _context.Entry(review).State = EntityState.Modified;
-
-            try {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
+            catch (NotFoundException ex)
             {
-                if (!_context.Reviews.Any(e => e.Id == id))
-                {
-                    return NotFound();
-                }
-                throw;
+                return NotFound(ex.Message);
             }
-            return NoContent();
+            catch (ValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при обновлении отзыва с ID {id}");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteReview(int id)
         {
-            var review = await _context.Reviews.FindAsync(id);
-            if(review == null)
+            try
             {
-                return NotFound();
+                await _reviewService.DeleteReviewAsync(id);
+                return NoContent();
             }
-
-            _context.Reviews.Remove(review);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при удалении отзыва с ID {id}");
+                return StatusCode(500, "Произошла внутренняя ошибка сервера");
+            }
         }
-
     }
 }
