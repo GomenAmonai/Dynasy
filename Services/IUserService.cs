@@ -1,4 +1,4 @@
-using Dynasy.Models;
+using Dynasy.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,10 +6,10 @@ namespace Dynasy.Services
 {
     public interface IUserService
     {
-        Task<User> GetUserByIdAsync(int userId);
-        Task<User> GetUserByEmailAsync(string email);
-        Task<List<User>> GetAllUsersAsync();
-        Task<User> RegisterUserAsync(string name, string email, string password);
+        Task<UserDTO> RegisterUserAsync(CreateUserDTO createUserDTO);
+        Task<List<UserDTO>> GetAllUsersAsync();
+        Task<UserDTO> GetUserByIdAsync(int userId);
         Task<bool> AuthenticateUserAsync(string email, string password);
+        Task<UserDTO> GetUserByEmailAsync(string email);
     }
 }

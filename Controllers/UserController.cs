@@ -1,103 +1,72 @@
-using Microsoft.AspNetCore.Mvc;
-using Dynasy.Data;
-using Dynasy.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections;
-using System.Collections.Generic;
-using Microsoft.Extensions.FileProviders;
-using System.Linq;
-
 namespace Dynasy.Controllers
 {
-    [Route("api/[contoller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUserService _userService;
 
-        public UserController(AppDbContext context)
+        public UserController(IUserService userService)
         {
-            _context = context; //Это констркутор?
+            _userService = userService;
         }
 
-        //GET: api/User
+        // Регистрация пользователя
+        [HttpPost("register")]
+        public async Task<ActionResult<UserDTO>> RegisterUser(CreateUserDTO createUserDTO)
+        {
+            var user = await _userService.RegisterUserAsync(createUserDTO);
+
+            if (user == null)
+                return BadRequest("User already exists");
+
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+        }
+
+        // Получение всех пользователей
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<List<UserDTO>>> GetAllUsers()
         {
-            return await _context.Users.ToListAsync();
+            var users = await _userService.GetAllUsersAsync();
+            return Ok(users);
         }
 
-        //GET: api/User/5 Почему 5?
+        // Получение пользователя по ID
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<ActionResult<UserDTO>> GetUserById(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userService.GetUserByIdAsync(id);
 
-            if(user == null)
-            {
+            if (user == null)
                 return NotFound();
-            }
-            return user;
+
+            return Ok(user);
         }
 
-        //POST: api/User
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        // Аутентификация пользователя
+        [HttpPost("authenticate")]
+        public async Task<ActionResult> AuthenticateUser(AuthenticateUserDTO authenticateUserDTO)
         {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            var isAuthenticated = await _userService.AuthenticateUserAsync(authenticateUserDTO.Email, authenticateUserDTO.Password);
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            if (!isAuthenticated)
+                return Unauthorized();
+
+            return Ok();
         }
 
-        //POST: api/User/5
-        [HttpPut("id")]
-        public async Task<IActionResult> PutUser(int id, User user)
+        // Обновление пользователя
+        [HttpPut("{id}")]
+        public async Task<ActionResult<UserDTO>> UpdateUser(int id, UpdateUserDTO updateUserDTO)
         {
-            if(id != user.Id)
-            {
-                return BadRequest();
-            }
+            var updatedUser = await _userService.UpdateUserAsync(id, updateUserDTO);
 
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-            return NoContent();
-        }
-
-        //DELETE: api/User/5
-        [HttpDelete("id")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if(user == null)
+            if (updatedUser == null)
             {
                 return NotFound();
             }
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-        private bool UserExists(int id)
-        {
-            return _context.Users.Any(e => e.Id == id);
+            return Ok(updatedUser);
         }
     }
 }

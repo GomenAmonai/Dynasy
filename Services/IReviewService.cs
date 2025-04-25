@@ -1,13 +1,10 @@
-using Dynasy.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Dynasy.Models;
 
-namespace Dynasy.Services
+public interface IReviewService
 {
-    public interface IReviewService
-    {
-        Task<List<Review>> GetReviewsForProductAsync(int productId);
-        Task<Review> AddReviewAsync(int userId, int productId, string content, int rating);
-        Task<bool> DeleteReviewAsync(int reviewId);
-    }
+    Task<Review> AddReviewAsync(Review review);
+    Task<IEnumerable<Review>> GetReviewsForProductAsync(int productId);
+    Task DeleteReviewAsync(int reviewId);
 }

@@ -1,83 +1,67 @@
-using Microsoft.AspNetCore.Mvc;
-using Dynasy.Data;
-using Dynasy.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections;
-using System.Collections.Generic;
-using Microsoft.Extensions.FileProviders;
-using System.Linq;
-
 namespace Dynasy.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductContoller : ControllerBase
+    public class ProductController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IProductService _productService;
 
-        public ProductContoller(AppDbContext context)
+        public ProductController(IProductService productService)
         {
-            _context = context;
+            _productService = productService;
         }
 
         [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct(Product product)
+        public async Task<ActionResult<ProductDTO>> CreateProduct(CreateProductDTO createProductDTO)
         {
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync(); // Асинхронное сохранение в БД
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+            var product = await _productService.CreateProductAsync(createProductDTO);
+
+            if (product == null)
+                return BadRequest("Product already exists");
+
+            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult<List<ProductDTO>>> GetAllProducts()
         {
-            var products = await _context.Products.ToListAsync();
+            var products = await _productService.GetAllProductsAsync();
             return Ok(products);
-
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id )
+        public async Task<ActionResult<ProductDTO>> GetProductById(int id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if(product == null)
-            {
+            var product = await _productService.GetProductByIdAsync(id);
+
+            if (product == null)
                 return NotFound();
-            }
+
             return Ok(product);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Product>> UpdateProduct(int id, Product updatedProduct)
+        public async Task<ActionResult<ProductDTO>> UpdateProduct(int id, UpdateProductDTO updateProductDTO)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if(product == null)
+            var updatedProduct = await _productService.UpdateProductAsync(id, updateProductDTO);
+
+            if (updatedProduct == null)
             {
                 return NotFound();
             }
 
-            product.Name = updatedProduct.Name;
-            product.Price = updatedProduct.Price;
-
-            //обновлякм другие поля по аналогии
-            await _context.SaveChangesAsync();
-            return Ok(product);
+            return Ok(updatedProduct);
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if (product == null)
-            {
-                return NotFound();
-            }
+            var result = await _productService.DeleteProductAsync(id);
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            if (!result)
+                return NotFound();
+
             return NoContent();
         }
-
     }
 }
